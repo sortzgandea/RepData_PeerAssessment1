@@ -1,4 +1,15 @@
 ---
+title: "RR week 2 assignment"
+author: "Domingo Castillo"
+date: "17 June 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
 title: "Reproducible Research: Peer Assessment 1"
 output: 
   html_document:
@@ -7,19 +18,47 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
-
+```{r, echo = FALSE}
+library(ggplot2)
+library(dplyr)
+data <- read.csv("activity.csv")
+pasos <- summarise(group_by(data,date), steps = sum(steps), mean = mean(steps), median = median(steps))
+```
 ## What is mean total number of steps taken per day?
-
-
-
+```{r}
+hist(pasos$steps)
+pasos[-2]
+```
 ## What is the average daily activity pattern?
+```{r}
 
-
-
+with(pasos,plot(date, mean))
+intervalos <- summarise(group_by(data,interval),intervalos = mean(steps, na.rm = TRUE))
+intervalos
+max <- intervalos[which(max(intervalos[,2])==intervalos[2]),1]
+```
 ## Imputing missing values
+````{r}
+nmissing <- sum(!complete.cases(data))
+cdata <- data.frame()
 
+for(i in 1:dim(data)[1]){
+    vect <- data[i,]
+    if(is.na(vect[1])){
+        vect[1]<- intervalos[which(intervalos[,1]==data[i,3]),2]
+    }
+    cdata<-rbind(cdata,vect)
+}
+cpasos <- summarise(group_by(cdata,date), steps = sum(steps), mean = mean(steps), median = median(steps))
+hist(cpasos$steps)
+cpasos[-2]
 
-
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+cdata$date <- as.Date(cdata$date)
+cdata <- mutate(cdata, week = as.factor(ifelse(weekdays(cdata$date)=="Saturday" | weekdays(cdata$date)=="Sunday","weekend","weekday")))
+
+weeks <- summarise(group_by(cdata, week, interval), winterval = mean(steps))
+qplot(interval, winterval, data = weeks, facets = .~ week, geom = "line") 
+```
